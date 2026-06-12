@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BirdCam</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #0e0f13;
+      color: #e8e8ea;
+    }
+    header {
+      padding: 14px 20px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: .02em;
+      border-bottom: 1px solid #23252b;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 12px;
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    figure {
+      margin: 0;
+      background: #16181d;
+      border: 1px solid #23252b;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #000;
+      aspect-ratio: 16 / 9;
+      object-fit: contain;
+      cursor: pointer;
+    }
+    figcaption {
+      padding: 8px 12px;
+      font-size: .9rem;
+      color: #b9bbc2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #3ddc84; }
+    .dot.down { background: #e5534b; }
+  </style>
+</head>
+<body>
+  <header>🐦 BirdCam</header>
+  <div class="grid">
+    <figure>
+      <img id="cam1" alt="Camera 1">
+      <figcaption><span>Camera 1</span><span class="dot" id="dot1"></span></figcaption>
+    </figure>
+    <figure>
+      <img id="cam2" alt="Camera 2">
+      <figcaption><span>Camera 2</span><span class="dot" id="dot2"></span></figcaption>
+    </figure>
+  </div>
+
+  <script>
+    // Wire up each MJPEG feed with auto-reconnect. If a stream drops (camera
+    // unplugged, service restart), retry after a short delay so the page heals
+    // itself without a manual refresh.
+    function setupCam(id, path, dotId) {
+      const img = document.getElementById(id);
+      const dot = document.getElementById(dotId);
+      function connect() {
+        // Cache-buster forces the browser to reopen the stream on reconnect.
+        img.src = path + "/stream?t=" + Date.now();
+      }
+      img.addEventListener("load", () => dot.classList.remove("down"));
+      img.addEventListener("error", () => {
+        dot.classList.add("down");
+        setTimeout(connect, 2000);
+      });
+      // Click a feed to open it fullscreen.
+      img.addEventListener("click", () => {
+        if (img.requestFullscreen) img.requestFullscreen();
+      });
+      connect();
+    }
+    setupCam("cam1", "/cam1", "dot1");
+    setupCam("cam2", "/cam2", "dot2");
+  </script>
+</body>
+</html>
