@@ -128,6 +128,12 @@ Apply changes with `sudo systemctl restart ustreamer@cam1 ustreamer@cam2`.
 - ⚠️ **The Pi 2 Model B has no built-in Wi-Fi.** Wireless requires a **USB Wi-Fi
   dongle**, which uses one USB port (still fine alongside two cameras). Deploy
   over **Ethernet**; switch to Wi-Fi for production.
+- **Not every dongle works out of the box.** Some chipsets need extra firmware
+  (often fixed by `apt install firmware-realtek`), and a few need vendor drivers.
+  Prefer a dongle documented to work on Raspberry Pi OS, and always **verify it
+  connects while Ethernet is still attached** — see Step 6 of
+  [DEPLOY-FROM-WINDOWS.md](DEPLOY-FROM-WINDOWS.md) for the recognition,
+  verification, and manual-connect steps.
 - **The IP changes when the Pi moves between Ethernet and Wi-Fi.** Rely on the
   hostname **`birdcam.local`** (mDNS), which follows the Pi across networks, or
   look the new IP up on your router.
