@@ -36,14 +36,21 @@ required to view.
 * **A powered USB hub is strongly recommended.** Two webcams can exceed the
   Pi's USB power budget, and all four USB ports share a single bus — a powered
   hub avoids brown-outs and bandwidth starvation.
-* The Pi connected to your network (Ethernet or Wi-Fi).
+* The Pi connected to your network (Ethernet or Wi-Fi). ⚠️ **The Pi 2 Model B
+  has no built-in Wi-Fi** — wireless requires a USB Wi-Fi dongle. Ethernet is
+  the easy path for setup.
 
 ## Install
 
-Run these **on the Pi** (over SSH or directly):
+> **First time, from a Windows PC and a blank SD card?** Follow the complete
+> step-by-step guide: **[docs/DEPLOY-FROM-WINDOWS.md](docs/DEPLOY-FROM-WINDOWS.md)**.
+> It covers flashing the SD card, finding and SSHing into the Pi, and everything
+> below — no prior Linux experience needed.
+
+Once you have Raspberry Pi OS running and can SSH in, run these **on the Pi**:
 
 ```bash
-git clone <this-repo-url> birdcam
+git clone https://github.com/LarsCardon/BirdCam.git birdcam
 cd birdcam
 sudo ./install.sh
 ```

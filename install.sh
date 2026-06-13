@@ -21,6 +21,18 @@ die()  { printf '\033[1;31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
 
 [[ $EUID -eq 0 ]] || die "Please run as root (sudo ./install.sh)."
 
+# --- Preflight: confirm we're on the Pi, not the Windows PC ---------------
+preflight() {
+    if [[ "$(uname -s)" != "Linux" ]] || ! command -v apt-get >/dev/null; then
+        die "This installer runs ON the Raspberry Pi (Raspberry Pi OS / Debian).
+     It looks like you're not on the Pi. SSH into the Pi first, then run it there."
+    fi
+    log "Checking internet access (needed to install packages and build uStreamer)..."
+    if ! ping -c1 -W3 github.com >/dev/null 2>&1 && ! ping -c1 -W3 deb.debian.org >/dev/null 2>&1; then
+        die "Can't reach the internet from the Pi. Connect Ethernet (or Wi-Fi) and retry."
+    fi
+}
+
 # --- Detect cameras and write per-camera config --------------------------
 configure_cameras() {
     log "Detecting cameras..."
@@ -59,12 +71,19 @@ if [[ $RECONFIG -eq 1 ]]; then
 fi
 
 # --- Dependencies ---------------------------------------------------------
+preflight
+
 log "Installing dependencies..."
 apt-get update
 apt-get install -y \
     git build-essential pkg-config \
-    libevent-dev libjpeg-dev libbsd-dev \
+    libevent-dev libbsd-dev \
     nginx v4l-utils python3
+# The libjpeg development package is named differently across Raspberry Pi OS
+# versions; try the modern name, then the older one.
+apt-get install -y libjpeg-dev \
+    || apt-get install -y libjpeg62-turbo-dev \
+    || die "Could not install a libjpeg development package (tried libjpeg-dev and libjpeg62-turbo-dev)."
 
 # --- Build uStreamer ------------------------------------------------------
 if [[ ! -x /usr/local/bin/ustreamer ]]; then
