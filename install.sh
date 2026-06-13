@@ -35,37 +35,48 @@ preflight() {
 
 # --- Detect cameras and write per-camera config --------------------------
 configure_cameras() {
-    log "Detecting cameras..."
+    log "Detecting cameras and their supported MJPEG modes..."
     python3 "$REPO_DIR/scripts/detect_cameras.py" || true
 
-    mapfile -t PATHS < <(python3 "$REPO_DIR/scripts/detect_cameras.py" --paths-only)
-    if [[ ${#PATHS[@]} -lt 2 ]]; then
-        warn "Found ${#PATHS[@]} camera(s); expected 2."
-        warn "Check connections / powered USB hub, then re-run: sudo ./install.sh --reconfig"
-        [[ ${#PATHS[@]} -eq 0 ]] && die "No cameras detected — aborting."
+    # Each line: "<device>\t<WxH>\t<fps>" — resolution/fps are auto-selected to
+    # a mode the camera actually supports, so uStreamer always starts cleanly.
+    mapfile -t CAMS < <(python3 "$REPO_DIR/scripts/detect_cameras.py" --config)
+    if [[ ${#CAMS[@]} -lt 2 ]]; then
+        warn "Found ${#CAMS[@]} camera(s); expected 2."
+        warn "Use a powered USB hub, reseat both cameras, then re-run: sudo ./install.sh --reconfig"
+        [[ ${#CAMS[@]} -eq 0 ]] && die "No cameras detected — aborting."
     fi
 
     mkdir -p "$CONF_DIR"
-    local i port
+    local i port dev res fps
     for i in 1 2; do
         port=$((8080 + i))
-        local dev="${PATHS[$((i - 1))]:-/dev/video$((($i - 1) * 2))}"
+        if [[ -n "${CAMS[$((i - 1))]:-}" ]]; then
+            IFS=$'\t' read -r dev res fps <<<"${CAMS[$((i - 1))]}"
+        else
+            # No second camera detected yet; write a placeholder so re-running
+            # --reconfig later fills it in once both are connected.
+            dev="/dev/video$((($i - 1) * 2))"; res="1280x720"; fps="30"
+        fi
         cat > "$CONF_DIR/cam${i}.conf" <<EOF
 # uStreamer settings for cam${i} (managed by BirdCam install.sh).
 # DEVICE is a stable by-path device tied to the physical USB port.
+# RESOLUTION/FPS were auto-selected from what the camera reported; edit freely.
 DEVICE=${dev}
 PORT=${port}
-RESOLUTION=1280x720
+RESOLUTION=${res}
 FORMAT=MJPEG
-FPS=30
+FPS=${fps}
 EOF
-        log "Wrote $CONF_DIR/cam${i}.conf -> ${dev} (port ${port})"
+        log "Wrote $CONF_DIR/cam${i}.conf -> ${dev}  ${res}@${fps} fps  (port ${port})"
     done
 }
 
 if [[ $RECONFIG -eq 1 ]]; then
+    # Free the cameras so detection can probe them, then bring services back.
+    systemctl stop ustreamer@cam1 ustreamer@cam2 2>/dev/null || true
     configure_cameras
-    systemctl restart ustreamer@cam1 ustreamer@cam2 || true
+    systemctl start ustreamer@cam1 ustreamer@cam2 || true
     log "Reconfigured. Done."
     exit 0
 fi
@@ -78,7 +89,11 @@ apt-get update
 apt-get install -y \
     git build-essential pkg-config \
     libevent-dev libbsd-dev \
-    nginx v4l-utils python3
+    nginx v4l-utils python3 \
+    avahi-daemon
+# avahi-daemon makes the Pi reachable as <hostname>.local (e.g. birdcam.local)
+# so viewers don't need to chase the IP address.
+systemctl enable --now avahi-daemon 2>/dev/null || true
 # The libjpeg development package is named differently across Raspberry Pi OS
 # versions; try the modern name, then the older one.
 apt-get install -y libjpeg-dev \

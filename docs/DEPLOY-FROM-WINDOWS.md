@@ -172,6 +172,7 @@ sudo systemctl restart ustreamer@cam1 ustreamer@cam2
 | Symptom | Fix |
 |---|---|
 | `ssh: could not resolve hostname birdcam.local` | Use the Pi's IP from your router instead. |
+| `git clone` fails with a certificate "not yet valid" / date error | The Pi 2 has no battery clock; on first boot it briefly has the wrong time. Wait ~30 s after boot for it to sync over the network, then retry. |
 | Installer says "not on the Pi" | You ran it on Windows. SSH into the Pi first (Step 3), then run it *there*. |
 | Installer says "can't reach the internet" | Check the Ethernet cable / router; the Pi needs internet to install. |
 | "Found 1 camera; expected 2" | Use a **powered** USB hub; reseat both cameras; re-run `sudo ./install.sh --reconfig`. |

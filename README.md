@@ -83,14 +83,16 @@ http://<pi-ip-or-hostname>/
 ## Configuration
 
 Per-camera settings live in `/etc/birdcam/cam1.conf` and
-`/etc/birdcam/cam2.conf`:
+`/etc/birdcam/cam2.conf`. The installer writes these automatically, picking a
+`RESOLUTION`/`FPS` the camera actually reports it supports (capped at
+`1280x720`), so uStreamer always starts cleanly. Edit them to taste:
 
 ```ini
 DEVICE=/dev/v4l/by-path/...-video-index0   # stable, tied to the physical port
 PORT=8081
-RESOLUTION=1280x720
+RESOLUTION=1280x720   # auto-selected from the camera's supported MJPEG modes
 FORMAT=MJPEG
-FPS=30
+FPS=30                # auto-selected
 ```
 
 After editing, restart the affected camera:

@@ -2,6 +2,10 @@
 Description=uStreamer MJPEG stream for %i
 After=network-online.target
 Wants=network-online.target
+# Keep retrying on cold boot while the USB camera enumerates, without tripping
+# systemd's restart limit. (These directives belong in [Unit], not [Service].)
+StartLimitIntervalSec=300
+StartLimitBurst=30
 
 [Service]
 # Per-camera settings (DEVICE, PORT, RESOLUTION, FORMAT, FPS).
@@ -17,9 +21,6 @@ ExecStart=/usr/local/bin/ustreamer \
     --persistent
 Restart=always
 RestartSec=3
-# Give the camera a moment to enumerate on cold boot before giving up.
-StartLimitIntervalSec=60
-StartLimitBurst=10
 
 [Install]
 WantedBy=multi-user.target
