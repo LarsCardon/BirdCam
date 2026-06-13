@@ -8,6 +8,13 @@ Built and tested against a **Raspberry Pi 2 Model B** with two **Microsoft
 LifeCam Cinema** webcams, but it works with any UVC webcam that can output
 **MJPEG** (which is almost all of them).
 
+## Documentation
+
+* **[docs/DEPLOY-FROM-WINDOWS.md](docs/DEPLOY-FROM-WINDOWS.md)** — full
+  walkthrough from a blank SD card on a Windows PC to live feeds.
+* **[docs/HARDWARE.md](docs/HARDWARE.md)** — powered-USB-hub wiring, power
+  budget, USB bandwidth, MJPEG rationale, and Pi-2 networking notes.
+
 ## How it works
 
 ```
@@ -35,7 +42,8 @@ required to view.
 * Two UVC / MJPEG USB webcams.
 * **A powered USB hub is strongly recommended.** Two webcams can exceed the
   Pi's USB power budget, and all four USB ports share a single bus — a powered
-  hub avoids brown-outs and bandwidth starvation.
+  hub avoids brown-outs and bandwidth starvation. See
+  **[docs/HARDWARE.md](docs/HARDWARE.md)** for exactly how to wire and size it.
 * The Pi connected to your network (Ethernet or Wi-Fi). ⚠️ **The Pi 2 Model B
   has no built-in Wi-Fi** — wireless requires a USB Wi-Fi dongle. Ethernet is
   the easy path for setup.
