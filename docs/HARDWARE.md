@@ -135,12 +135,33 @@ Apply changes with `sudo systemctl restart ustreamer@cam1 ustreamer@cam2`.
 - ⚠️ **The Pi 2 Model B has no built-in Wi-Fi.** Wireless requires a **USB Wi-Fi
   dongle**, which uses one USB port (still fine alongside two cameras). Deploy
   over **Ethernet**; switch to Wi-Fi for production.
-- **Not every dongle works out of the box.** Some chipsets need extra firmware
-  (often fixed by `apt install firmware-realtek`), and a few need vendor drivers.
-  Prefer a dongle documented to work on Raspberry Pi OS, and always **verify it
-  connects while Ethernet is still attached** — see Step 6 of
-  [DEPLOY-FROM-WINDOWS.md](DEPLOY-FROM-WINDOWS.md) for the recognition,
-  verification, and manual-connect steps.
+- ⚠️ **On a Pi 2 the Ethernet port is itself a USB device** (`smsc95xx` on the
+  internal hub). Two consequences: a misbehaving USB Wi-Fi driver can wedge the
+  USB bus and take *wired* networking down with it; and a USB power/hub problem
+  can disrupt Ethernet too. If Ethernet dies right after a Wi-Fi change, suspect
+  the Wi-Fi driver/USB, not the network config.
+- **The dongle chipset is everything — buy by chipset, not brand.** Vendors
+  silently swap chipsets between hardware revisions (e.g. a "TP-Link Archer T2U
+  Nano" can be an in-kernel RTL8811AU on one revision and a poorly-supported
+  Wi-Fi 6 RTL8852AU on another). Always check the **USB ID** (`lsusb`) and look
+  up the real chipset.
+  - **Strongly prefer in-kernel chipsets** — they work the instant you plug them
+    in, need no DKMS, and survive kernel upgrades: **MediaTek MT7601U** (Wi-Fi N,
+    cheapest reliable), **Ralink RT5370** (Wi-Fi N), **Realtek RTL8188EU**
+    (Wi-Fi N), or **MediaTek MT7610U/MT7612U** (Wi-Fi AC). A Pi 2's USB 2.0 bus
+    can't push much, so even Wi-Fi N is plenty for camera streams.
+  - **Avoid out-of-tree Realtek** (`RTL8811AU/8821AU/8821CU/8852AU`): they need a
+    DKMS driver that **breaks on every kernel upgrade** and must be matched to the
+    exact chip variant. See the dongle box in Step 6 of
+    [DEPLOY-FROM-WINDOWS.md](DEPLOY-FROM-WINDOWS.md) for the full decision tree,
+    the kernel-pinning workaround, and `scripts/wifi-check.sh`.
+  - Always **verify the dongle connects while Ethernet is still attached** before
+    cutting the cable.
+- ⚠️ **Shut down cleanly — always `sudo shutdown -h now`, then wait for the green
+  ACT LED to stop before pulling power.** The Pi 2's SD card corrupts easily on an
+  abrupt power loss, which can leave it unable to boot or reach the network at
+  all. If that happens, re-flashing and re-running the installer is the quickest
+  recovery (the whole setup lives in this repo).
 - **The IP changes when the Pi moves between Ethernet and Wi-Fi.** Rely on the
   hostname **`birdcam.local`** (mDNS), which follows the Pi across networks, or
   look the new IP up on your router.
