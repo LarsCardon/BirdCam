@@ -1,0 +1,26 @@
+[Unit]
+Description=uStreamer MJPEG stream for %i
+After=network-online.target
+Wants=network-online.target
+# Keep retrying on cold boot while the USB camera enumerates, without tripping
+# systemd's restart limit. (These directives belong in [Unit], not [Service].)
+StartLimitIntervalSec=300
+StartLimitBurst=30
+
+[Service]
+# Per-camera settings (DEVICE, PORT, RESOLUTION, FORMAT, FPS).
+EnvironmentFile=/etc/birdcam/%i.conf
+ExecStart=/usr/local/bin/ustreamer \
+    --device=${DEVICE} \
+    --host=127.0.0.1 \
+    --port=${PORT} \
+    --resolution=${RESOLUTION} \
+    --format=${FORMAT} \
+    --desired-fps=${FPS} \
+    --drop-same-frames=30 \
+    --persistent
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+# uStreamer settings for cam2 — installed to /etc/birdcam/cam2.conf
+#
+# DEVICE: prefer a stable /dev/v4l/by-path/... path. It is tied to the physical
+# USB port, so the camera keeps the same identity across reboots. Run
+# `sudo birdcam-detect` to list the available paths.
+DEVICE=/dev/video2
+PORT=8082
+RESOLUTION=1280x720
+FORMAT=MJPEG
+FPS=30
