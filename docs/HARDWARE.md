@@ -8,9 +8,16 @@ before buying parts or debugging flaky feeds.
 
 ## Powering the cameras and Wi-Fi dongle (powered USB hub)
 
-This is the single most important physical detail. Get it wrong and you'll see
-random camera disconnects, corrupt frames, or Wi-Fi dropouts — usually only
-under load, with no clear error.
+> **Running a single camera?** You can skip the hub. One webcam fits within the
+> Pi's USB power budget, so plug it straight into a Pi port. The powered hub
+> below matters once you add a **second** camera (or a Wi-Fi dongle alongside
+> two cameras). BirdCam's installer auto-detects a single camera and configures
+> for it; add the hub and a second camera later, then `sudo ./install.sh
+> --reconfig`.
+
+This is the single most important physical detail *for a two-camera setup*. Get
+it wrong and you'll see random camera disconnects, corrupt frames, or Wi-Fi
+dropouts — usually only under load, with no clear error.
 
 ### The core idea: two separate power sources
 

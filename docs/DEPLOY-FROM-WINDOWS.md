@@ -1,8 +1,13 @@
 # Deploying BirdCam from Windows (start to finish)
 
-This walks you from a **blank SD card on a Windows PC** to **two live webcam
-feeds on a web page**, assuming nothing is set up yet. No prior Raspberry Pi or
-Linux experience required.
+This walks you from a **blank SD card on a Windows PC** to **live webcam feeds
+on a web page**, assuming nothing is set up yet. No prior Raspberry Pi or Linux
+experience required.
+
+> **Just one camera (no USB hub yet)?** That works — the installer auto-detects
+> a single camera and sets everything up for it. A single camera plugs straight
+> into the Pi; the powered USB hub is only needed for two. Wherever this guide
+> says "two cameras" or "the hub," do the one-camera equivalent and read on.
 
 > You do **not** need VS Code or any developer tools on Windows. Everything you
 > need is the free Raspberry Pi Imager plus the `ssh` command that ships with
@@ -15,9 +20,9 @@ Linux experience required.
 - Raspberry Pi 2 Model B + its power supply
 - microSD card (8 GB+) and a way to write to it from the PC (built-in slot or a
   USB adapter)
-- Two USB webcams
-- **A powered USB hub** (strongly recommended — two cameras can exceed the Pi's
-  USB power budget)
+- One or two USB webcams
+- **A powered USB hub** (strongly recommended *for two cameras* — they can
+  exceed the Pi's USB power budget; not needed for a single camera)
 - An **Ethernet cable** for setup (we deploy over Ethernet)
 - A **USB Wi-Fi dongle** for "production" use — ⚠️ **the Pi 2 Model B has no
   built-in Wi-Fi**, so wireless needs a dongle plugged into a USB port
@@ -47,8 +52,9 @@ Linux experience required.
 ## Step 2 — First boot (over Ethernet)
 
 1. Put the SD card in the Pi.
-2. Plug in: **Ethernet cable**, the **powered USB hub**, and **both webcams into
-   the hub**. (Skip the Wi-Fi dongle for now.)
+2. Plug in the **Ethernet cable** and your camera(s). For two cameras, use the
+   **powered USB hub** and plug **both webcams into the hub**; for one camera,
+   plug it straight into a Pi USB port. (Skip the Wi-Fi dongle for now.)
 3. Power on the Pi. Give it **~60–90 seconds** to boot the first time.
 
 ## Step 3 — Connect from Windows over SSH
@@ -79,10 +85,13 @@ sudo ./install.sh
 ```
 
 The installer checks you're on the Pi and online, installs everything, builds
-uStreamer, auto-detects both cameras, and starts the services. It finishes by
+uStreamer, auto-detects your camera(s), and starts the services. It finishes by
 printing the URL.
 
 > Building uStreamer on a Pi 2 takes a few minutes — that's normal.
+>
+> **Want to force a single camera** even if two are connected? Run
+> `sudo ./install.sh --cameras 1` instead.
 
 ## Step 5 — Watch your cameras
 
@@ -92,7 +101,7 @@ From **any** device on the network (your Windows PC, phone, etc.) open:
 http://birdcam.local/
 ```
 
-Both feeds should appear. Done. 🎉
+Your feed(s) should appear. Done. 🎉
 
 (If `.local` doesn't work on a viewing device, use `http://<pi-ip>/` — the same
 IP from Step 3.)
@@ -151,18 +160,19 @@ the #1 surprise here).
 
 ### Wi-Fi performance tuning
 
-Two video streams over Wi-Fi (especially through a USB dongle on a Pi 2) need
-more headroom than wired. If feeds stutter on Wi-Fi, lower the load — edit each
-camera config on the Pi:
+Video over Wi-Fi (especially through a USB dongle on a Pi 2) needs more headroom
+than wired — and two streams more than one. If feeds stutter on Wi-Fi, lower the
+load — edit each camera config on the Pi:
 
 ```bash
-sudo nano /etc/birdcam/cam1.conf     # and cam2.conf
+sudo nano /etc/birdcam/cam1.conf     # and cam2.conf if you have two cameras
 ```
 
-Try `RESOLUTION=640x480` and/or `FPS=15`, then:
+Try `RESOLUTION=640x480` and/or `FPS=15`, then restart that camera (add
+`ustreamer@cam2` if you have two):
 
 ```bash
-sudo systemctl restart ustreamer@cam1 ustreamer@cam2
+sudo systemctl restart ustreamer@cam1
 ```
 
 ---
@@ -175,7 +185,8 @@ sudo systemctl restart ustreamer@cam1 ustreamer@cam2
 | `git clone` fails with a certificate "not yet valid" / date error | The Pi 2 has no battery clock; on first boot it briefly has the wrong time. Wait ~30 s after boot for it to sync over the network, then retry. |
 | Installer says "not on the Pi" | You ran it on Windows. SSH into the Pi first (Step 3), then run it *there*. |
 | Installer says "can't reach the internet" | Check the Ethernet cable / router; the Pi needs internet to install. |
-| "Found 1 camera; expected 2" | Use a **powered** USB hub; reseat both cameras; re-run `sudo ./install.sh --reconfig`. |
+| Want two cameras but only one shows up | The installer set up for one camera. Use a **powered** USB hub, plug in both, then re-run `sudo ./install.sh --reconfig` (or `--cameras 2`). |
+| Set up one camera, now adding a second | Plug both in via a powered hub, then `sudo ./install.sh --reconfig`. |
 | Page loads but a feed is black/red dot | `journalctl -u ustreamer@cam1 -f` on the Pi to see why; often a power/bandwidth issue → powered hub + lower resolution. |
 | Cameras swapped (cam1 shows the wrong view) | Swap which port each camera is in, or rerun `sudo ./install.sh --reconfig`. |
 

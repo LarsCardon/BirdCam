@@ -26,6 +26,12 @@
       gap: 12px;
       padding: 12px;
     }
+    /* A single camera shouldn't stretch full-width on a big screen. */
+    .grid.single {
+      grid-template-columns: 1fr;
+      max-width: 960px;
+      margin: 0 auto;
+    }
     @media (max-width: 800px) {
       .grid { grid-template-columns: 1fr; }
     }
@@ -59,24 +65,31 @@
 </head>
 <body>
   <header>🐦 BirdCam</header>
-  <div class="grid">
-    <figure>
-      <img id="cam1" alt="Camera 1">
-      <figcaption><span>Camera 1</span><span class="dot" id="dot1"></span></figcaption>
-    </figure>
-    <figure>
-      <img id="cam2" alt="Camera 2">
-      <figcaption><span>Camera 2</span><span class="dot" id="dot2"></span></figcaption>
-    </figure>
-  </div>
+  <div class="grid" id="grid"></div>
 
   <script>
-    // Wire up each MJPEG feed with auto-reconnect. If a stream drops (camera
+    // Number of cameras to show. install.sh rewrites this line to match the
+    // number it configured (1 or 2); the default of 2 keeps this file usable
+    // on its own.
+    const CAM_COUNT = 2;
+
+    // Wire up one MJPEG feed with auto-reconnect. If a stream drops (camera
     // unplugged, service restart), retry after a short delay so the page heals
     // itself without a manual refresh.
-    function setupCam(id, path, dotId) {
-      const img = document.getElementById(id);
-      const dot = document.getElementById(dotId);
+    function setupCam(n) {
+      const path = "/cam" + n;
+      const figure = document.createElement("figure");
+      const img = document.createElement("img");
+      img.alt = "Camera " + n;
+      const caption = document.createElement("figcaption");
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      caption.innerHTML = "<span>Camera " + n + "</span>";
+      caption.appendChild(dot);
+      figure.appendChild(img);
+      figure.appendChild(caption);
+      document.getElementById("grid").appendChild(figure);
+
       function connect() {
         // Cache-buster forces the browser to reopen the stream on reconnect.
         img.src = path + "/stream?t=" + Date.now();
@@ -92,8 +105,9 @@
       });
       connect();
     }
-    setupCam("cam1", "/cam1", "dot1");
-    setupCam("cam2", "/cam2", "dot2");
+
+    if (CAM_COUNT === 1) document.getElementById("grid").classList.add("single");
+    for (let n = 1; n <= CAM_COUNT; n++) setupCam(n);
   </script>
 </body>
 </html>
