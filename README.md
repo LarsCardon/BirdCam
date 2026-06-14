@@ -1,12 +1,17 @@
 # BirdCam
 
-Stream two USB webcams from a Raspberry Pi to a single web page on your local
-network. Plug in the cameras, power on the Pi, and both live feeds appear at
-`http://<pi-address>/`.
+Stream one or two USB webcams from a Raspberry Pi to a single web page on your
+local network. Plug in the camera(s), power on the Pi, and the live feed(s)
+appear at `http://<pi-address>/`.
 
-Built and tested against a **Raspberry Pi 2 Model B** with two **Microsoft
-LifeCam Cinema** webcams, but it works with any UVC webcam that can output
-**MJPEG** (which is almost all of them).
+The installer **auto-detects how many cameras are connected** (one or two), so
+you can start with a single camera today and add a second later — no powered USB
+hub required for one camera. Run `sudo ./install.sh --cameras 1` to force a
+single-camera setup explicitly.
+
+Built and tested against a **Raspberry Pi 2 Model B** with **Microsoft LifeCam
+Cinema** webcams, but it works with any UVC webcam that can output **MJPEG**
+(which is almost all of them).
 
 ## Documentation
 
@@ -39,11 +44,12 @@ required to view.
 
 * Raspberry Pi (2 Model B or better recommended) running **Raspberry Pi OS**
   (Lite is fine — no desktop needed).
-* Two UVC / MJPEG USB webcams.
-* **A powered USB hub is strongly recommended.** Two webcams can exceed the
-  Pi's USB power budget, and all four USB ports share a single bus — a powered
-  hub avoids brown-outs and bandwidth starvation. See
+* One or two UVC / MJPEG USB webcams.
+* **For two cameras, a powered USB hub is strongly recommended.** Two webcams
+  can exceed the Pi's USB power budget, and all four USB ports share a single
+  bus — a powered hub avoids brown-outs and bandwidth starvation. See
   **[docs/HARDWARE.md](docs/HARDWARE.md)** for exactly how to wire and size it.
+  A **single** camera plugs straight into the Pi and needs no hub.
 * The Pi connected to your network (Ethernet or Wi-Fi). ⚠️ **The Pi 2 Model B
   has no built-in Wi-Fi** — wireless requires a USB Wi-Fi dongle. Ethernet is
   the easy path for setup.
@@ -67,10 +73,23 @@ The installer will:
 
 1. Install dependencies (`nginx`, `v4l-utils`, build tools).
 2. Build and install uStreamer.
-3. Detect your two cameras and write `/etc/birdcam/cam1.conf` and
-   `/etc/birdcam/cam2.conf` pointing at their stable USB-port device paths.
-4. Install the systemd services, web page, and nginx config.
+3. Detect how many cameras are connected (one or two) and write a
+   `/etc/birdcam/camN.conf` for each, pointing at its stable USB-port device
+   path. Force a count with `--cameras 1` / `--cameras 2` if you prefer.
+4. Install the systemd services, web page, and nginx config sized to that count.
 5. Enable and start everything.
+
+### Starting with one camera, adding a second later
+
+Set up with a single camera now, and when you get a powered USB hub and a second
+camera, plug it in and re-run:
+
+```bash
+sudo ./install.sh --reconfig
+```
+
+It re-detects the cameras, rewrites the configs, and updates the web page and
+nginx to show both feeds.
 
 When it finishes it prints the URL to open. From any device on the LAN:
 
