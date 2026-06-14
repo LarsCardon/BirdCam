@@ -79,10 +79,15 @@ You're now on the Pi. The prompt changes to something like `pi@birdcam:~ $`.
 The repo is public, so this needs no login. On the Pi:
 
 ```bash
+sudo apt update
+sudo apt install -y git    # Raspberry Pi OS Lite doesn't ship with git
 git clone https://github.com/LarsCardon/BirdCam.git birdcam
 cd birdcam
 sudo ./install.sh
 ```
+
+> If `git clone` reports a certificate "not yet valid" / date error, the Pi 2
+> has no battery clock — wait ~30 s after boot for it to sync time, then retry.
 
 The installer checks you're on the Pi and online, installs everything, builds
 uStreamer, auto-detects your camera(s), and starts the services. It finishes by
