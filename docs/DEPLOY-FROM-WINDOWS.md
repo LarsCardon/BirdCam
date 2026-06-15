@@ -25,7 +25,12 @@ experience required.
   exceed the Pi's USB power budget; not needed for a single camera)
 - An **Ethernet cable** for setup (we deploy over Ethernet)
 - A **USB Wi-Fi dongle** for "production" use — ⚠️ **the Pi 2 Model B has no
-  built-in Wi-Fi**, so wireless needs a dongle plugged into a USB port
+  built-in Wi-Fi**, so wireless needs a dongle plugged into a USB port.
+  **Buy by chipset, not brand** (see the dongle box in Step 6): pick one with an
+  **in-kernel driver** (e.g. MediaTek **MT7601U** for Wi-Fi N, or **MT7610U/
+  MT7612U** for Wi-Fi AC) so it works the moment you plug it in. **Avoid** Realtek
+  `RTL8811AU/8821AU/8821CU/8852AU`-class sticks — they need fragile out-of-tree
+  drivers that break on every kernel update.
 
 ---
 
@@ -45,7 +50,9 @@ experience required.
      (e.g. `pi`) and password. **Write these down.**
    - **Configure wireless LAN:** enter your home Wi-Fi **SSID + password** and
      set your **Wi-Fi country** (e.g. `SE`). We deploy over Ethernet, but
-     pre-filling this means production Wi-Fi "just works" once the dongle is in.
+     pre-filling this means production Wi-Fi connects automatically *once a
+     **supported** dongle is recognized* — see Step 6 for how to confirm yours
+     is supported before you rely on it.
    - **Set locale / time zone** as appropriate.
 5. **Save**, then **Write**. Wait for it to finish and verify.
 
@@ -118,8 +125,25 @@ IP from Step 3.)
 The Wi-Fi **credentials** you entered in Step 1 are already saved on the Pi.
 They apply to whatever wireless interface exists — so the moment a *supported*
 dongle is recognized as `wlan0`, the Pi connects automatically. The steps below
-plug it in and **verify** that actually happened (don't assume — old dongles are
-the #1 surprise here).
+plug it in and **verify** that actually happened (don't assume — the dongle's
+chipset is the #1 surprise here, and a "Wi-Fi dongle that doesn't work" is by far
+the most time-consuming thing that can go wrong in this whole guide).
+
+> **⚠️ Always shut down cleanly.** On a Pi 2 the SD card's filesystem corrupts
+> easily if you pull power while it's running — which can leave it unable to boot
+> *or even bring up Ethernet* on the next start. Every time: run
+> `sudo shutdown -h now`, wait for the green **ACT** LED to stop blinking, *then*
+> unplug power. (Note: on a Pi 2 the Ethernet port is itself a USB device, so a
+> bad shutdown — or a misbehaving USB Wi-Fi driver — can take wired networking
+> down too.)
+
+> **Run the built-in checker.** Once you've cloned the repo (Step 4), the fastest
+> way to see exactly which layer is failing is:
+> ```bash
+> bash ~/birdcam/scripts/wifi-check.sh
+> ```
+> It prints the dongle's USB ID + chipset hint, whether an interface exists, and
+> whether it's connected — and tells you what each result means.
 
 1. `sudo shutdown -h now` on the Pi, then unplug power.
 2. Plug the **USB Wi-Fi dongle** into a free USB port.
@@ -128,12 +152,19 @@ the #1 surprise here).
 4. SSH in (`ssh pi@birdcam.local`) and confirm the dongle is recognized and
    connected:
    ```bash
+   lsusb                       # is the dongle even on the USB bus? note its ID, e.g. 2357:0141
    ip link show wlan0          # should list a wlan0 interface
+   iw dev                      # lists ONLY wireless interfaces — empty = no driver bound
    nmcli device status         # wlan0 should say "connected" to your SSID
    ip -4 addr show wlan0       # should show an IP once connected
    ```
-   - **No `wlan0` at all?** The dongle's chipset isn't supported out of the box —
-     see the troubleshooting box below.
+   (or just `bash ~/birdcam/scripts/wifi-check.sh`, which runs all of these and
+   interprets them.)
+   - **Dongle not in `lsusb`?** Power/cable/port problem — move it to a direct Pi
+     port and reseat it, *before* touching any software.
+   - **In `lsusb` but no `wlan0` / `iw dev` empty?** The kernel has no driver bound
+     to it — see the troubleshooting box below. **Note the USB ID and look it up
+     now**, before installing anything.
    - **`wlan0` exists but not connected?** Connect it manually (this also re-saves
      the credentials):
      ```bash
@@ -147,20 +178,54 @@ the #1 surprise here).
    `http://birdcam.local/` (the hostname follows it across networks), or look up
    the new IP on your router.
 
-> **Dongle not recognized? (no `wlan0`)**
-> Some USB Wi-Fi dongles — especially older ones — need firmware that isn't
-> installed by default. With Ethernet still connected:
+> **Dongle in `lsusb` but no `wlan0`? Work out *why* before installing anything.**
+> First, **identify the chipset** — search the web for your exact USB ID (the
+> `lsusb` value such as `2357:0141`). The fix depends entirely on which of three
+> cases you're in:
+>
+> **Case A — in-kernel chipset, just needs firmware.** If it's a MediaTek
+> (MT7601U/MT7610U/MT7612U), Ralink (RT5370), or Realtek **RTL8188EU**, the driver
+> ships with the kernel and it usually only needs a firmware blob. With Ethernet
+> attached:
 > ```bash
-> dmesg | grep -i -E 'usb|firmware|wlan|80211'   # what the kernel saw when you plugged it in
-> lsusb                                          # confirm the dongle appears at all
-> sudo apt update && sudo apt install -y firmware-realtek firmware-atheros firmware-misc-nonfree
+> dmesg | grep -i -E 'firmware|wlan|80211'       # look for "firmware load failed"
+> sudo apt update && sudo apt install -y firmware-misc-nonfree firmware-realtek firmware-atheros
 > sudo reboot
 > ```
-> The `firmware-realtek` package covers the most common dongle chipsets; the
-> others cover many of the rest. If `lsusb` shows the dongle but no `wlan0`
-> appears even after installing firmware and rebooting, that specific dongle
-> likely needs a vendor-specific driver — easiest fix is to swap in a dongle
-> known to work on Raspberry Pi OS (look up your chipset before buying).
+>
+> **Case B — out-of-tree Realtek (RTL8811AU/8821AU/8821CU/8852AU, etc.).** These
+> have **no in-kernel driver** and need a DKMS driver (e.g. the `morrownr`
+> repos). It can be made to work, but be warned this is a rabbit hole:
+> - You must install kernel headers (`sudo apt install -y bc dkms build-essential linux-headers-$(uname -r)`)
+>   and build the driver — slow on a Pi 2.
+> - **It breaks on every kernel upgrade.** If `apt` pulls a newer kernel, the
+>   module no longer matches (`iw dev` goes empty again). Rebuild with
+>   `sudo apt install -y linux-headers-$(uname -r) && sudo dkms autoinstall`, and
+>   consider pinning the kernel: `sudo apt-mark hold` the `linux-image-*` /
+>   `linux-headers-*` packages.
+> - **Match the driver to the exact chip.** `RTL8811CU/8821CU` use the `8821cu`
+>   driver, *not* `8821au`; Wi-Fi 6 `RTL8852AU/8832AU` use `rtl8852au`/`rtw89`.
+>   Installing the wrong one builds fine but never binds (no `wlan0`). Check the
+>   driver actually lists your USB ID: `modinfo <module> | grep <vendorid>`.
+> - **Honestly: don't.** A Pi 2's USB 2.0 bus can't use Wi-Fi 6 speeds anyway.
+>   The reliable fix is to swap in an in-kernel dongle (next case).
+>
+> **Case C — the right answer: use a dongle with an in-kernel driver.** It works
+> the instant you plug it in, needs no DKMS, and survives kernel upgrades. Buy by
+> **chipset, not brand** (vendors silently swap chipsets between hardware
+> revisions). Known-good, widely available:
+>
+> | Chipset | Type | Example models | Notes |
+> |---|---|---|---|
+> | **MediaTek MT7601U** | Wi-Fi 4 (N150) | EDUP MS8551, many "nano" sticks | Cheapest reliable option (~€8–12); plenty for a Pi 2 |
+> | **Ralink RT5370** | Wi-Fi 4 (N150) | Panda PAU03/PAU05 | "It just works"; common |
+> | **Realtek RTL8188EU** | Wi-Fi 4 (N150) | TP-Link TL-WN725N **v2/v3**, Edimax EW-7811Un v2 | In-kernel since modern kernels; cheap |
+> | **MediaTek MT7610U** | Wi-Fi 5 (AC600) | various AC600 "nano" sticks | Dual-band; verify the chipset before buying |
+> | **MediaTek MT7612U** | Wi-Fi 5 (AC1200) | PIX-LINK LV-UAC04 (~€11), Panda PAU0D, Alfa AWUS036ACM | Most headroom; pricier |
+>
+> When ordering, look for the chipset **in the listing or reviews** (Linux users
+> usually mention it), and prefer sellers/revisions that state it. Avoid generic
+> AliExpress sticks that don't name a chipset — they're a coin flip.
 
 
 ### Wi-Fi performance tuning
@@ -187,6 +252,8 @@ sudo systemctl restart ustreamer@cam1
 | Symptom | Fix |
 |---|---|
 | `ssh: could not resolve hostname birdcam.local` | Use the Pi's IP from your router instead. |
+| Pi won't boot / no Ethernet **after a power cut** (not on the router at all) | Likely SD-card filesystem corruption from pulling power without `sudo shutdown -h now`. Put the card in your PC: the boot/FAT partition should still mount. Easiest recovery is to **re-flash** (Step 1) and re-run the installer — your setup is fully reproducible from this repo. Always shut down cleanly to avoid this. |
+| Wi-Fi dongle shows in `lsusb` but there's no `wlan0` | The kernel has no driver bound. Identify the chipset from the USB ID and follow the dongle box in **Step 6** — most often the real fix is a dongle with an in-kernel driver. |
 | `git clone` fails with a certificate "not yet valid" / date error | The Pi 2 has no battery clock; on first boot it briefly has the wrong time. Wait ~30 s after boot for it to sync over the network, then retry. |
 | Installer says "not on the Pi" | You ran it on Windows. SSH into the Pi first (Step 3), then run it *there*. |
 | Installer says "can't reach the internet" | Check the Ethernet cable / router; the Pi needs internet to install. |
