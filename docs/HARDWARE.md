@@ -132,9 +132,19 @@ Apply changes with `sudo systemctl restart ustreamer@cam1 ustreamer@cam2`.
 
 ## Networking notes (Pi 2 specifics)
 
-- ⚠️ **The Pi 2 Model B has no built-in Wi-Fi.** Wireless requires a **USB Wi-Fi
-  dongle**, which uses one USB port (still fine alongside two cameras). Deploy
-  over **Ethernet**; switch to Wi-Fi for production.
+- ⚠️ **The Pi 2 Model B has no built-in Wi-Fi.** Deploy over **Ethernet** (which
+  works out of the box); for wireless production you have two options:
+- ✅ **Recommended: a Wi-Fi extender/bridge over Ethernet (no dongle, no
+  drivers).** Place a Wi-Fi range-extender/repeater that has a **LAN port** near
+  the Pi (a 6–7 m indoor cable run is fine) and connect the Pi to it with
+  Ethernet. The Pi stays on rock-solid **wired** networking while the extender
+  bridges to your home Wi-Fi — sidestepping every USB Wi-Fi dongle/driver issue
+  below. Run the extender in **repeater/bridge mode (not a separate NAT router)**
+  so the Pi keeps a normal lease on your main network and `birdcam.local` still
+  resolves. Only the extender↔router hop affects stream quality; the Pi↔extender
+  link is wired. See Step 6 of [DEPLOY-FROM-WINDOWS.md](DEPLOY-FROM-WINDOWS.md).
+- **Alternative: a USB Wi-Fi dongle**, which uses one USB port (still fine
+  alongside two cameras) — but mind the chipset caveats below.
 - ⚠️ **On a Pi 2 the Ethernet port is itself a USB device** (`smsc95xx` on the
   internal hub). Two consequences: a misbehaving USB Wi-Fi driver can wedge the
   USB bus and take *wired* networking down with it; and a USB power/hub problem
