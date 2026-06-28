@@ -23,14 +23,20 @@ experience required.
 - One or two USB webcams
 - **A powered USB hub** (strongly recommended *for two cameras* — they can
   exceed the Pi's USB power budget; not needed for a single camera)
-- An **Ethernet cable** for setup (we deploy over Ethernet)
-- A **USB Wi-Fi dongle** for "production" use — ⚠️ **the Pi 2 Model B has no
-  built-in Wi-Fi**, so wireless needs a dongle plugged into a USB port.
-  **Buy by chipset, not brand** (see the dongle box in Step 6): pick one with an
-  **in-kernel driver** (e.g. MediaTek **MT7601U** for Wi-Fi N, or **MT7610U/
-  MT7612U** for Wi-Fi AC) so it works the moment you plug it in. **Avoid** Realtek
-  `RTL8811AU/8821AU/8821CU/8852AU`-class sticks — they need fragile out-of-tree
-  drivers that break on every kernel update.
+- An **Ethernet cable** for setup (we deploy over Ethernet) — and quite possibly
+  for production too, see the next two bullets
+- **For wireless production, pick *one* approach:**
+  - **(Easiest) A Wi-Fi extender/repeater with a LAN port**, if you have one or
+    can place one within cable reach of the Pi. The Pi stays on **wired Ethernet**
+    (which just works — no dongle, no drivers) and the extender bridges it to your
+    Wi-Fi. See the **"Skip the dongle"** box in Step 6. This avoids all USB Wi-Fi
+    headaches and is the recommended route.
+  - **(Alternative) A USB Wi-Fi dongle** — ⚠️ **the Pi 2 Model B has no built-in
+    Wi-Fi**, so this needs a dongle in a USB port. **Buy by chipset, not brand**
+    (see the dongle box in Step 6): pick one with an **in-kernel driver** (e.g.
+    MediaTek **MT7601U** for Wi-Fi N, or **MT7610U/MT7612U** for Wi-Fi AC). **Avoid**
+    Realtek `RTL8811AU/8821AU/8821CU/8852AU`-class sticks — they need fragile
+    out-of-tree drivers that break on every kernel update.
 
 ---
 
@@ -120,7 +126,38 @@ IP from Step 3.)
 
 ---
 
-## Step 6 — Switch to Wi-Fi for production
+## Step 6 — Going wireless for production
+
+There are two ways to make the Pi wireless. **Read the first box before reaching
+for a USB dongle** — it's simpler and avoids the single biggest time sink in this
+whole guide.
+
+> **✅ Easiest: skip the dongle — bridge with a Wi-Fi extender over Ethernet.**
+> If you have (or can place) a **Wi-Fi extender / repeater / range-extender that
+> has an Ethernet (LAN) port** within cable reach of the Pi, you don't need a USB
+> Wi-Fi dongle at all:
+> 1. Put the extender somewhere it gets a **solid signal to your router**, near
+>    enough to the Pi to run an Ethernet cable (a 6–7 m indoor run is fine).
+> 2. Run an **Ethernet cable from the extender's LAN port to the Pi**.
+> 3. That's it — the Pi stays on **wired Ethernet, which already works** with zero
+>    drivers. The extender handles the wireless hop; the Pi never knows it isn't
+>    plugged straight into the router.
+>
+> This sidesteps every USB Wi-Fi dongle/driver problem. Two things to get right:
+> - **Run the extender in "repeater / range-extender / bridge" mode, not a
+>   separate "router/AP" (NAT) mode.** In bridge mode the Pi stays on your main
+>   network, so its DHCP lease and **`birdcam.local`** keep working normally. If
+>   the extender NATs, the Pi lands on a different subnet and you'd reach it at the
+>   extender's address instead.
+> - Only the **extender ↔ router** Wi-Fi hop affects stream quality (the Pi ↔
+>   extender link is solid wired). If feeds stutter, improve the extender's
+>   placement/signal, or apply the resolution/FPS tips under *Wi-Fi performance
+>   tuning* below.
+>
+> If you go this route, **you're done after Step 5** — no dongle, no Step 6
+> commands. The rest of this section is only for the USB-dongle approach.
+
+### Using a USB Wi-Fi dongle instead
 
 The Wi-Fi **credentials** you entered in Step 1 are already saved on the Pi.
 They apply to whatever wireless interface exists — so the moment a *supported*
